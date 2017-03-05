@@ -1,18 +1,99 @@
 // ==UserScript==
 // @name         zzuwlan-auto-auth
 // @namespace    http://tampermonkey.net/
-// @version      0.1
+// @version      0.2
 // @description   zzuwlan 自动认证
 // @author       dangge
-//@match        http://202.196.64.132/*
-//@match        http://202.196.64.132:8080/
-// @match        https://edu3.v.zzu.edu.cn/ssss/wlogin.dll/login
-// @grant        none
+// @match        http://202.196.64.132/*
+// @match        http://202.196.64.6/*
+// @match        https://edu3.v.zzu.edu.cn/*
+// @grant        GM_xmlhttpRequest
+// @run-at       document-end
+// @homepageURL       https://github.com/dangger/zzuwlan-auto-auth
+// @supportURL        https://github.com/dangger/zzuwlan-auto-auth/issues
 // ==/UserScript==
 
+//首页面跳转
+function jump(){
+    var host = window.location.host;
+   if(host=="202.196.64.132" && document.title=="郑州大学统一身份认证平台")
+    {
+        window.location.href="http://202.196.64.132:8080/";
+    }
+}
+//cookie框架
+var docCookies = {
+  getItem: function (sKey) {
+    return decodeURIComponent(document.cookie.replace(new RegExp("(?:(?:^|.*;)\\s*" + encodeURIComponent(sKey).replace(/[\-\.\+\*]/g, "\\$&") + "\\s*\\=\\s*([^;]*).*$)|^.*$"), "$1")) || null;
+  },
+  setItem: function (sKey, sValue, vEnd, sPath, sDomain, bSecure) {
+    if (!sKey || /^(?:expires|max\-age|path|domain|secure)$/i.test(sKey)) { return false; }
+    var sExpires = "";
+    if (vEnd) {
+      switch (vEnd.constructor) {
+        case Number:
+          sExpires = vEnd === Infinity ? "; expires=Fri, 31 Dec 9999 23:59:59 GMT" : "; max-age=" + vEnd;
+          break;
+        case String:
+          sExpires = "; expires=" + vEnd;
+          break;
+        case Date:
+          sExpires = "; expires=" + vEnd.toUTCString();
+          break;
+      }
+    }
+    document.cookie = encodeURIComponent(sKey) + "=" + encodeURIComponent(sValue) + sExpires + (sDomain ? "; domain=" + sDomain : "") + (sPath ? "; path=" + sPath : "") + (bSecure ? "; secure" : "");
+    return true;
+  },
+  removeItem: function (sKey, sPath, sDomain) {
+    if (!sKey || !this.hasItem(sKey)) { return false; }
+    document.cookie = encodeURIComponent(sKey) + "=; expires=Thu, 01 Jan 1970 00:00:00 GMT" + ( sDomain ? "; domain=" + sDomain : "") + ( sPath ? "; path=" + sPath : "");
+    return true;
+  },
+  hasItem: function (sKey) {
+    return (new RegExp("(?:^|;\\s*)" + encodeURIComponent(sKey).replace(/[\-\.\+\*]/g, "\\$&") + "\\s*\\=")).test(document.cookie);
+  },
+  keys: /* optional method: you can safely remove it! */ function () {
+    var aKeys = document.cookie.replace(/((?:^|\s*;)[^\=]+)(?=;|$)|^\s*|\s*(?:\=[^;]*)?(?:\1|$)/g, "").split(/\s*(?:\=[^;]*)?;\s*/);
+    for (var nIdx = 0; nIdx < aKeys.length; nIdx++) { aKeys[nIdx] = decodeURIComponent(aKeys[nIdx]); }
+    return aKeys;
+  }
+};
+
+//检测是否写入了账号和密码
+function checkCookies(){
+    if(docCookies.hasItem('username') || docCookies.hasItem('password')){
+        console.log(docCookies.getItem('username'));
+        console.log(docCookies.getItem('password'));
+    }
+    else{
+        username=prompt('输入学号:',"")
+        password=prompt('输入密码:',"")
+        docCookies.setItem("username", username, 3153600)
+        docCookies.setItem("password", password, 3153600)
+    }
+}
+
+//清除 cookies
+function delCookies(){
+    docCookies.removeItem("username");
+    docCookies.removeItem("password");
+}
+function error(){
+var error =document.getElementById("mt_5").innerHTML;
+var left = error.indexOf("登录失败，原因是：");
+var right = error.indexOf("。");
+error = error.substring(left,right);
+if(error=="登录失败，原因是：未检索到你输入的账号，或密码错误"){
+    alert("检查下是不是账号密码打错了！");
+    delCookies();
+    window.location.href="http://www.163.com";
+}
+//欠费这个暂时没法测，一会儿再说
+}
+//ocr 页面的验证码然后吐出来用
 function ocr(){
-            //如果要用在greasemonkey脚本里,可以把下面的代码放在image的onload事件里
-    var image = document.querySelector("#myimg6");
+        var image = document.querySelector("#myimg6");
         var canvas = document.createElement('canvas');
         var ctx = canvas.getContext("2d");
         var numbers = [                           //模板,依次是0-9十个数字对应的明暗值字符串
@@ -72,25 +153,38 @@ function ocr(){
             captcha += comms.indexOf(Math.max.apply(null, comms))<=9?comms.indexOf(Math.max.apply(null, comms)):String.fromCharCode(comms.indexOf(Math.max.apply(null, comms))+87);          //添加到识别好的验证码中
         }
     document.querySelector("input[name=ver6]").value = captcha;
-        }
+}
+//欢迎界面和 cookies 清除按钮
+function welcome(){
+    console.log("认证完毕");
+}
 
-(function() {
-    //'use strict';
+
+//init
+(function(){
+    jump();
+
     var host = window.location.host;
-    if(host=="202.196.64.132")
-    {
-        window.location.href="http://202.196.64.132:8080/";
-    }
     if(host=="202.196.64.132:8080"){
-        ocr();
-        document.querySelector("input[name=uid]").value = "用户名";
-        document.querySelector("input[name=upw]").value = "密码";
-        document.getElementsByName("smbtn")[0].click();
+        checkCookies();
+ function ready(fin) {
+    if (document.readyState != 'loading'){
+      fin();
+    } else {
+      document.addEventListener('DOMContentLoaded', fin);
     }
-    host = window.location.host;
-    if(host=="edu3.v.zzu.edu.cn"){
-        //document.getElementsByName("btn2")[0].click();
-        zzjGotoWlan();
-        window.location.href="https://blog.dangge.moe";
-    }
+  }
+  ready(function() {
+    document.querySelector("#myimg6").onload = function(e){
+      e.stopPropagation();
+      ocr();
+    };
+  });
+    document.querySelector("input[name=uid]").value = docCookies.getItem('username');
+    document.querySelector("input[name=upw]").value = docCookies.getItem('password');
+    setTimeout(function(){ document.getElementsByName("smbtn")[0].click(); }, 3000);
+}
+    error();
+    zzjGotoWlan();
+    welcome();
 })();
