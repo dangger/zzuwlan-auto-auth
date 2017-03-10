@@ -1,12 +1,13 @@
 // ==UserScript==
 // @name         zzuwlan-auto-auth
 // @namespace    http://tampermonkey.net/
-// @version      0.2
+// @version      0.2.1
 // @description   zzuwlan 自动认证
 // @author       dangge
 // @match        http://202.196.64.132/*
 // @match        http://202.196.64.6/*
 // @match        https://edu3.v.zzu.edu.cn/*
+// @match        https://edu.v.zzu.edu.cn/*
 // @grant        GM_xmlhttpRequest
 // @run-at       document-end
 // @homepageURL       https://github.com/dangger/zzuwlan-auto-auth
@@ -16,9 +17,16 @@
 //首页面跳转
 function jump(){
     var host = window.location.host;
+    //北区
    if(host=="202.196.64.132" && document.title=="郑州大学统一身份认证平台")
     {
         window.location.href="http://202.196.64.132:8080/";
+    }
+
+    //新区
+    else if(host=="202.196.64.6" && document.title=="郑州大学统一身份认证平台")
+    {
+        window.location.href="http://202.196.64.6:8080/";
     }
 }
 //cookie框架
@@ -89,7 +97,7 @@ if(error=="登录失败，原因是：未检索到你输入的账号，或密码
     delCookies();
     window.location.href="http://www.163.com";
 }
-//欠费这个暂时没法测，一会儿再说
+//欠费这个暂时没法测，等我欠费了再说
 }
 //ocr 页面的验证码然后吐出来用
 function ocr(){
@@ -165,7 +173,7 @@ function welcome(){
     jump();
 
     var host = window.location.host;
-    if(host=="202.196.64.132:8080"){
+    if(host=="202.196.64.132:8080"||host=="202.196.64.6:8080"){
         checkCookies();
  function ready(fin) {
     if (document.readyState != 'loading'){
